@@ -13,7 +13,7 @@ public class EchoClient {
     try {
       s = new Socket(ip, port);
 
-      new Thread(() -> listen()).start();
+      listen();
       speak();
     } catch (IOException ie) {
 
@@ -21,15 +21,21 @@ public class EchoClient {
   }
 
   public void listen() {
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
-      PrintWriter pw = new PrintWriter(System.out, true);
-      String str = "";
-      while ((str = br.readLine()) != null) {
-        pw.println(str);
+    Thread th = new Thread() {
+      @Override
+      public void run() {
+        try {
+          BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+          PrintWriter pw = new PrintWriter(System.out, true);
+          String str = "";
+          while ((str = br.readLine()) != null) {
+            pw.println(str);
+          }
+        } catch (IOException ie) {
+        }
       }
-    } catch (IOException ie) {
-    }
+    };
+    th.start();
   }
 
   public void speak() {

@@ -11,10 +11,8 @@ public class EchoServer {
   ConcurrentHashMap<String, User> userMap = new ConcurrentHashMap<>();
 
   int port = 5000;
-  int i = 0;
 
-
-  public void init() {
+  public EchoServer() {
     try {
       ServerSocket ss = new ServerSocket(port);
       System.out.println(port + "번 대기중");
@@ -29,57 +27,68 @@ public class EchoServer {
 
 
   public void handleClient(Socket s) {
-
-    Thread th = new Thread() {
-      @Override
-      public void run() {
-        listen(s);
-      }
-    };
-
-    th.start();
-    speak(s);
-  }
-
-  public void listen(Socket s) {
     String nickname = "";
+    User user = null;
     try {
       BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
       PrintWriter pw = new PrintWriter(System.out, true);
 
       nickname = br.readLine();
-      userMap.put(nickname, new User(nickname, "suwan", s));
-      System.out.println(nickname + "님이 입장했습니다.");
+      user = new User(nickname, "suwan", s);
+      userMap.put(nickname, user);
 
-      String str = "";
-      while ((str = br.readLine()) != null) {
-        pw.println(nickname + ">> " + str);
-      }
-    } catch (SocketException se) {
-      System.out.println(nickname + "님이 퇴장했습니다.");
+      System.out.println(nickname + "님이 입장했습니다.");
     } catch (IOException ie) {
       ie.printStackTrace();
     }
+
+    listen(user);
+    speak(user);
   }
 
-  public void speak(Socket s) {
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-      PrintWriter pw = new PrintWriter(s.getOutputStream(), true);
-
-      String str = "";
-      while ((str = br.readLine()) != null) {
-        pw.println("운영자>> " + str);
+  public void listen(User user) {
+    Thread th = new Thread() {
+      public void run() {
+        try {
+          BufferedReader br = new BufferedReader(new InputStreamReader(user.getSocket().getInputStream()));
+          PrintWriter pw = new PrintWriter(System.out, true);
+          String str = "";
+          while ((str = br.readLine()) != null) {
+            pw.println(user.getUsername() + ">> " + str);
+          }
+        } catch (SocketException se) {
+          System.out.println(user.getUsername() + "님이 퇴장했습니다.");
+        } catch (IOException ie) {
+          ie.printStackTrace();
+        }
       }
+    };
+    th.start();
+  }
 
-    } catch (IOException ie) {
-      ie.printStackTrace();
-    }
+  public void speak(User user) {
+    Thread th = new Thread() {
+      @Override
+      public void run() {
+        try {
+          BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+          PrintWriter pw = new PrintWriter(user.getSocket().getOutputStream(), true);
+
+          String str = "";
+          while ((str = br.readLine()) != null) {
+            pw.println("운영자>> " + str);
+          }
+
+        } catch (IOException ie) {
+          ie.printStackTrace();
+        }
+      }
+    };
+    th.start();
   }
 
   public static void main(String[] args) {
     EchoServer e = new EchoServer();
-    e.init();
   }
 }
 
